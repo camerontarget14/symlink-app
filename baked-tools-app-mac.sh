@@ -110,7 +110,7 @@ case "$action" in
 
         # Define source and destination paths
         source_path="/Volumes/BAKED/$category/$project_name/SUITE/2_WORK/1_SEQUENCES/VFX"
-        destination_path="/Volumes/BAKED/$category/$project_name/BASKET/2_WORK/1_SEQUENCES/VFX"
+        destination_path="/Volumes/BAKED/$category/$project_name/BASKET/2_WORK/1_SEQUENCES/"
 
         # Execute rsync command
         execute_rsync "$source_path" "$destination_path"
