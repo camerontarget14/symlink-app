@@ -58,7 +58,7 @@ EOT
 
 # Function to open the documentation site
 open_documentation_site() {
-    open "https://www.wearebaked.com"
+    open "https://bakedstudios.github.io/baked-docs/"
 }
 
 # Function to execute rsync command in a new terminal window
@@ -85,7 +85,37 @@ case "$action" in
         # Continue with current script for creating symlinks
         ;;
     "Transfer Shot")
-        echo "Transfer Shot selected. Exiting for now."
+        # Prompt for project name, category, and shot name
+        project_name=$(prompt_for_input "Enter the project name:" "")
+        if [ "$project_name" = "CANCELLED" ]; then
+            echo "Operation cancelled by the user at project name prompt."
+            exit 0
+        fi
+
+        category=$(prompt_for_category)
+        if [ "$category" = "CANCELLED" ]; then
+            echo "Operation cancelled by the user at category selection."
+            exit 0
+        fi
+
+        shot_name=$(prompt_for_input "Enter the shot name:" "")
+        if [ "$shot_name" = "CANCELLED" ]; then
+            echo "Operation cancelled by the user at shot name prompt."
+            exit 0
+        fi
+
+        # Ensure the project name, category, and shot name are not empty
+        if [ -z "$project_name" ] || [ -z "$category" ] || [ -z "$shot_name" ]; then
+            echo "Project name, category, or shot name cannot be empty."
+            exit 0
+        fi
+
+        # Define source and destination paths
+        source_path="/Volumes/BAKED/$category/$project_name/BASKET/2_WORK/1_SEQUENCES/VFX/$shot_name"
+        destination_path="/Volumes/BAKED/$category/$project_name/SUITE/2_WORK/1_SEQUENCES/VFX"
+
+        # Execute rsync command
+        execute_rsync "$source_path" "$destination_path"
         exit 0
         ;;
     "Archive Show")
