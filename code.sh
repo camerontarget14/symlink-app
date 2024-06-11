@@ -68,7 +68,7 @@ execute_rsync() {
     osascript <<EOT
         tell application "Terminal"
             activate
-            do script "rsync -avh --ignore-existing '$source_path/' '$destination_path/'"
+            do script "sudo rsync -avh --ignore-existing '$source_path/' '$destination_path/'"
         end tell
 EOT
 }
@@ -85,13 +85,13 @@ copy_global_settings() {
     copied_folders=""
     for folder in "default_ingest-media" "default_ocio" "default_nuketranscoder"; do
         # Copy the folder
-        cp -R "$source_path/$folder" "$destination_path"
+        sudo cp -R "$source_path/$folder" "$destination_path"
         # Remove "default_" from folder name
-        mv "$destination_path/$folder" "$destination_path/${folder/default_/}"
+        sudo mv "$destination_path/$folder" "$destination_path/${folder/default_/}"
         # Replace tokens in settings.yml
         if [ "$folder" = "default_ingest-media" ]; then
             settings_file="$destination_path/ingest-media/settings.yml"
-            sed -i '' -e "s/{category}/$category/g; s/{project_name}/$project_name/g" "$settings_file"
+            sudo sed -i '' -e "s/{category}/$category/g; s/{project_name}/$project_name/g" "$settings_file"
         fi
         # Track copied folders
         copied_folders+="• ${folder/default_/}\n"
@@ -227,11 +227,11 @@ base_path="/Volumes/BAKED"
 project_path="$base_path/$category/$project_name"
 log_path="$base_path/symlink_creation_log.txt"
 
-mkdir -p "$project_path"
+sudo mkdir -p "$project_path"
 
 # Create symbolic links
 log_message() {
-    echo "$1" >> "$log_path"
+    echo "$1" | sudo tee -a "$log_path"
 }
 
 create_symlink() {
@@ -240,7 +240,7 @@ create_symlink() {
     if [ -L "$link" ]; then
         log_message "Symlink at $link already exists. Skipping creation."
     elif [[ -d "$target" ]]; then
-        ln -s "$target" "$link"
+        sudo ln -s "$target" "$link"
         log_message "Created symlink at $link pointing to $target"
     else
         log_message "$target is unreachable. Symlink not created."
