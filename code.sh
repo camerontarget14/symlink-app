@@ -101,6 +101,9 @@ copy_global_settings() {
     show_popup "Copied global settings:\n\n$copied_folders"
 }
 
+# Prompt for password for the first sudo command
+sudo -v
+
 # Check if /Volumes/BAKED exists and prompt to create if not
 if [ ! -d "/Volumes/BAKED" ]; then
     response=$(osascript <<EOT
