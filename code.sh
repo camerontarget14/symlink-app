@@ -3,7 +3,7 @@
 # Function to prompt for action using AppleScript
 prompt_for_action() {
     osascript <<EOT
-        set action_list to {"Create Symlinks", "Copy Global Settings", "Transfer Shot", "Archive Show", "Visit Documentation Site"}
+        set action_list to {"Create Symlinks", "Copy Global Settings (BETA DO NOT USE)", "Transfer Shot", "Archive Show", "Visit Documentation Site"}
         try
             set chosen_action to choose from list action_list with prompt "What would you like to do?"
             if chosen_action is false then
@@ -101,6 +101,22 @@ copy_global_settings() {
     show_popup "Copied global settings:\n\n$copied_folders"
 }
 
+# Check if /Volumes/BAKED exists and prompt to create if not
+if [ ! -d "/Volumes/BAKED" ]; then
+    response=$(osascript <<EOT
+        display dialog "It looks like the BAKED folder does not exist at /Volumes/BAKED - would you like to create it?" buttons {"No", "Yes"} default button "Yes"
+        return button returned of result
+EOT
+    )
+
+    if [ "$response" = "No" ]; then
+        echo "Operation cancelled by the user."
+        exit 0
+    else
+        sudo mkdir -p "/Volumes/BAKED"
+        show_popup "The BAKED folder has been created at /Volumes/BAKED."
+    fi
+fi
 
 # Prompt for action
 action=$(prompt_for_action)
