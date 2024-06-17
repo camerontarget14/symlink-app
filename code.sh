@@ -13,7 +13,7 @@ validate_sudo_password() {
 # Function to prompt for action using AppleScript
 prompt_for_action() {
     osascript <<EOT
-        set action_list to {"Create Symlinks", "Copy Global Settings (BETA DO NOT USE)", "Transfer Shot", "Archive Show", "Visit Documentation Site"}
+        set action_list to {"Create Symlinks", "Transfer Shot", "Archive Show", "Visit Documentation Site"}
         try
             set chosen_action to choose from list action_list with prompt "What would you like to do?"
             if chosen_action is false then
@@ -95,42 +95,6 @@ create_directory() {
     fi
 }
 
-# Function to copy global settings
-copy_global_settings() {
-    project_name="$1"
-    category="$2"
-    suite_path="/Volumes/Suite"
-    source_path="$suite_path/Admin/resources"
-    destination_path="$suite_path/$category/$project_name/global/configs"
-
-    # Create destination directory if it does not exist
-    create_directory "$destination_path"
-
-    # Copy folders and replace tokens
-    copied_folders=""
-    for folder in "default_ingest-media" "default_ocio" "default_nuketranscoder"; do
-        # Copy the folder
-        if echo "$sudo_password" | sudo -S cp -R "$source_path/$folder" "$destination_path"; then
-            # Remove "default_" from folder name
-            echo "$sudo_password" | sudo -S mv "$destination_path/$folder" "$destination_path/${folder/default_/}"
-            # Replace tokens in settings.yml
-            if [ "$folder" = "default_ingest-media" ]; then
-                settings_file="$destination_path/ingest-media/settings.yml"
-                echo "$sudo_password" | sudo -S sed -i '' -e "s/{category}/$category/g; s/{project_name}/$project_name/g" "$settings_file"
-            fi
-            # Track copied folders
-            copied_folders+="• ${folder/default_/}\n"
-        else
-            echo "Error copying folder: $folder"
-            show_popup "Error copying folder: $folder"
-            exit 1
-        fi
-    done
-
-    # Show popup message
-    show_popup "Copied global settings:\n\n$copied_folders"
-}
-
 # Function to log messages
 log_message() {
     log_path="/Volumes/Suite/symlink_logs.log"
@@ -195,10 +159,8 @@ fi
 
 case "$action" in
     "Create Symlinks")
-        # Continue with current script for creating symlinks
         ;;
     "Transfer Shot")
-        # Prompt for project name, category, and shot name
         project_name=$(prompt_for_input "Enter the project name:" "")
         if [ "$project_name" = "CANCELLED" ]; then
             echo "Operation cancelled by the user at project name prompt."
@@ -217,22 +179,18 @@ case "$action" in
             exit 0
         fi
 
-        # Ensure the project name, category, and shot name are not empty
         if [ -z "$project_name" ] || [ -z "$category" ] || [ -z "$shot_name" ]; then
             echo "Project name, category, or shot name cannot be empty."
             exit 0
         fi
 
-        # Define source and destination paths
         source_path="/Volumes/BAKED/$category/$project_name/BASKET/2_WORK/1_SEQUENCES/VFX/$shot_name"
         destination_path="/Volumes/BAKED/$category/$project_name/SUITE/2_WORK/1_SEQUENCES/VFX"
 
-        # Execute rsync command
         execute_rsync "$source_path" "$destination_path"
         exit 0
         ;;
     "Archive Show")
-        # Prompt for project name and category
         project_name=$(prompt_for_input "Enter the project name:" "")
         if [ "$project_name" = "CANCELLED" ]; then
             echo "Operation cancelled by the user at project name prompt."
@@ -245,40 +203,19 @@ case "$action" in
             exit 0
         fi
 
-        # Ensure the project name and category are not empty
         if [ -z "$project_name" ] || [ -z "$category" ]; then
             echo "Project name or category cannot be empty."
             exit 0
         fi
 
-        # Define source and destination paths
         source_path="/Volumes/BAKED/$category/$project_name/SUITE/2_WORK/1_SEQUENCES/VFX"
         destination_path="/Volumes/BAKED/$category/$project_name/BASKET/2_WORK/1_SEQUENCES"
 
-        # Execute rsync command
         execute_rsync "$source_path" "$destination_path"
         exit 0
         ;;
     "Visit Documentation Site")
         open_documentation_site
-        exit 0
-        ;;
-    "Copy Global Settings")
-        # Prompt for project name and category
-        project_name=$(prompt_for_input "Enter the project name:" "")
-        if [ "$project_name" = "CANCELLED" ]; then
-            echo "Operation cancelled by the user at project name prompt."
-            exit 0
-        fi
-
-        category=$(prompt_for_category)
-        if [ "$category" = "CANCELLED" ]; then
-            echo "Operation cancelled by the user at category selection."
-            exit 0
-        fi
-
-        # Copy global settings
-        copy_global_settings "$project_name" "$category"
         exit 0
         ;;
     *)
@@ -300,13 +237,11 @@ if [ "$category" = "CANCELLED" ]; then
     exit 0
 fi
 
-# Ensure the project name and category are not empty
 if [ -z "$project_name" ] || [ -z "$category" ]; then
     echo "Project name or category cannot be empty."
     exit 0
 fi
 
-# Create the project directory
 base_path="/Volumes/BAKED"
 project_path="$base_path/$category/$project_name"
 
