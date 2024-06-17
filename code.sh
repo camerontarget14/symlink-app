@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# Function to prompt for sudo password using AppleScript
+prompt_for_sudo_password() {
+    osascript -e 'Tell application "System Events" to display dialog "Please enter your sudo password:" default answer "" with hidden answer' -e 'text returned of result'
+}
+
+# Function to validate the entered password
+validate_sudo_password() {
+    echo "$1" | sudo -S -v > /dev/null 2>&1
+}
+
 # Function to prompt for action using AppleScript
 prompt_for_action() {
     osascript <<EOT
@@ -68,7 +78,7 @@ execute_rsync() {
     osascript <<EOT
         tell application "Terminal"
             activate
-            do script "sudo rsync -avh --ignore-existing '$source_path/' '$destination_path/'"
+            do script "rsync -avh --ignore-existing '$source_path/' '$destination_path/'"
         end tell
 EOT
 }
@@ -85,21 +95,39 @@ copy_global_settings() {
     copied_folders=""
     for folder in "default_ingest-media" "default_ocio" "default_nuketranscoder"; do
         # Copy the folder
-        sudo cp -R "$source_path/$folder" "$destination_path"
-        # Remove "default_" from folder name
-        sudo mv "$destination_path/$folder" "$destination_path/${folder/default_/}"
-        # Replace tokens in settings.yml
-        if [ "$folder" = "default_ingest-media" ]; then
-            settings_file="$destination_path/ingest-media/settings.yml"
-            sudo sed -i '' -e "s/{category}/$category/g; s/{project_name}/$project_name/g" "$settings_file"
+        if echo "$sudo_password" | sudo -S cp -R "$source_path/$folder" "$destination_path"; then
+            # Remove "default_" from folder name
+            echo "$sudo_password" | sudo -S mv "$destination_path/$folder" "$destination_path/${folder/default_/}"
+            # Replace tokens in settings.yml
+            if [ "$folder" = "default_ingest-media" ]; then
+                settings_file="$destination_path/ingest-media/settings.yml"
+                echo "$sudo_password" | sudo -S sed -i '' -e "s/{category}/$category/g; s/{project_name}/$project_name/g" "$settings_file"
+            fi
+            # Track copied folders
+            copied_folders+="• ${folder/default_/}\n"
+        else
+            echo "Error copying folder: $folder"
+            show_popup "Error copying folder: $folder"
+            exit 1
         fi
-        # Track copied folders
-        copied_folders+="• ${folder/default_/}\n"
     done
 
     # Show popup message
     show_popup "Copied global settings:\n\n$copied_folders"
 }
+
+# Prompt for sudo password
+sudo_password=$(prompt_for_sudo_password)
+if [ -z "$sudo_password" ]; then
+    echo "Password entry cancelled by the user."
+    exit 1
+fi
+
+# Validate the sudo password
+if ! validate_sudo_password "$sudo_password"; then
+    show_popup "Invalid sudo password. Exiting."
+    exit 1
+fi
 
 # Check if /Volumes/BAKED exists and prompt to create if not
 if [ ! -d "/Volumes/BAKED" ]; then
@@ -113,8 +141,13 @@ EOT
         echo "Operation cancelled by the user."
         exit 0
     else
-        sudo mkdir -p "/Volumes/BAKED"
-        show_popup "The BAKED folder has been created at /Volumes/BAKED."
+        if echo "$sudo_password" | sudo -S mkdir -p "/Volumes/BAKED"; then
+            show_popup "The BAKED folder has been created at /Volumes/BAKED."
+        else
+            echo "Error creating /Volumes/BAKED folder."
+            show_popup "Error creating /Volumes/BAKED folder."
+            exit 1
+        fi
     fi
 fi
 
@@ -241,13 +274,17 @@ fi
 # Create the project directory
 base_path="/Volumes/BAKED"
 project_path="$base_path/$category/$project_name"
-log_path="$base_path/symlink_creation_log.txt"
+log_path="/Volumes/Suite/symlink_logs.log"
 
-sudo mkdir -p "$project_path"
+if ! echo "$sudo_password" | sudo -S mkdir -p "$project_path"; then
+    echo "Error creating project directory: $project_path"
+    show_popup "Error creating project directory: $project_path"
+    exit 1
+fi
 
 # Create symbolic links
 log_message() {
-    echo "$1" | sudo tee -a "$log_path"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$log_path"
 }
 
 create_symlink() {
@@ -256,8 +293,12 @@ create_symlink() {
     if [ -L "$link" ]; then
         log_message "Symlink at $link already exists. Skipping creation."
     elif [[ -d "$target" ]]; then
-        sudo ln -s "$target" "$link"
-        log_message "Created symlink at $link pointing to $target"
+        if ln -s "$target" "$link"; then
+            log_message "Created symlink at $link pointing to $target"
+        else
+            log_message "Failed to create symlink at $link pointing to $target"
+            show_popup "Failed to create symlink at $link pointing to $target"
+        fi
     else
         log_message "$target is unreachable. Symlink not created."
         show_popup "$target is unreachable. If you're connected to this storage location and are still seeing this error, the project has not yet been created at this location. Otherwise, you can ignore this."
