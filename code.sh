@@ -83,6 +83,18 @@ execute_rsync() {
 EOT
 }
 
+# Function to create directory and handle errors
+create_directory() {
+    local dir_path="$1"
+    if echo "$sudo_password" | sudo -S mkdir -p "$dir_path"; then
+        log_message "Created directory: $dir_path"
+    else
+        log_message "Error creating directory: $dir_path"
+        show_popup "Error creating directory: $dir_path"
+        exit 1
+    fi
+}
+
 # Function to copy global settings
 copy_global_settings() {
     project_name="$1"
@@ -90,6 +102,9 @@ copy_global_settings() {
     suite_path="/Volumes/Suite"
     source_path="$suite_path/Admin/resources"
     destination_path="$suite_path/$category/$project_name/global/configs"
+
+    # Create destination directory if it does not exist
+    create_directory "$destination_path"
 
     # Copy folders and replace tokens
     copied_folders=""
@@ -114,6 +129,31 @@ copy_global_settings() {
 
     # Show popup message
     show_popup "Copied global settings:\n\n$copied_folders"
+}
+
+# Function to log messages
+log_message() {
+    log_path="/Volumes/Suite/symlink_logs.log"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$log_path"
+}
+
+# Function to create symbolic links
+create_symlink() {
+    target="$1"
+    link="$2"
+    if [ -L "$link" ]; then
+        log_message "Symlink at $link already exists. Skipping creation."
+    elif [[ -d "$target" ]]; then
+        if ln -s "$target" "$link"; then
+            log_message "Created symlink at $link pointing to $target"
+        else
+            log_message "Failed to create symlink at $link pointing to $target"
+            show_popup "Failed to create symlink at $link pointing to $target"
+        fi
+    else
+        log_message "$target is unreachable. Symlink not created."
+        show_popup "$target is unreachable. If you're connected to this storage location and are still seeing this error, the project has not yet been created at this location. Otherwise, you can ignore this."
+    fi
 }
 
 # Prompt for sudo password
@@ -141,13 +181,8 @@ EOT
         echo "Operation cancelled by the user."
         exit 0
     else
-        if echo "$sudo_password" | sudo -S mkdir -p "/Volumes/BAKED"; then
-            show_popup "The BAKED folder has been created at /Volumes/BAKED."
-        else
-            echo "Error creating /Volumes/BAKED folder."
-            show_popup "Error creating /Volumes/BAKED folder."
-            exit 1
-        fi
+        create_directory "/Volumes/BAKED"
+        show_popup "The BAKED folder has been created at /Volumes/BAKED."
     fi
 fi
 
@@ -274,36 +309,8 @@ fi
 # Create the project directory
 base_path="/Volumes/BAKED"
 project_path="$base_path/$category/$project_name"
-log_path="/Volumes/Suite/symlink_logs.log"
 
-if ! echo "$sudo_password" | sudo -S mkdir -p "$project_path"; then
-    echo "Error creating project directory: $project_path"
-    show_popup "Error creating project directory: $project_path"
-    exit 1
-fi
-
-# Create symbolic links
-log_message() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$log_path"
-}
-
-create_symlink() {
-    target="$1"
-    link="$2"
-    if [ -L "$link" ]; then
-        log_message "Symlink at $link already exists. Skipping creation."
-    elif [[ -d "$target" ]]; then
-        if ln -s "$target" "$link"; then
-            log_message "Created symlink at $link pointing to $target"
-        else
-            log_message "Failed to create symlink at $link pointing to $target"
-            show_popup "Failed to create symlink at $link pointing to $target"
-        fi
-    else
-        log_message "$target is unreachable. Symlink not created."
-        show_popup "$target is unreachable. If you're connected to this storage location and are still seeing this error, the project has not yet been created at this location. Otherwise, you can ignore this."
-    fi
-}
+create_directory "$project_path"
 
 create_symlink "/Volumes/Suite/$category/$project_name" "$project_path/SUITE"
 create_symlink "/Volumes/Basket/$category/$project_name" "$project_path/BASKET"
