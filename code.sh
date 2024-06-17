@@ -2,7 +2,7 @@
 
 # Function to prompt for sudo password using AppleScript
 prompt_for_sudo_password() {
-    osascript -e 'Tell application "System Events" to display dialog "Please enter your sudo password:" default answer "" with hidden answer' -e 'text returned of result'
+    osascript -e 'Tell application "System Events" to display dialog "Please enter your system password:" default answer "" with hidden answer' -e 'text returned of result'
 }
 
 # Function to validate the entered password
@@ -91,7 +91,7 @@ create_directory() {
     else
         log_message "Error creating directory: $dir_path"
         show_popup "Error creating directory: $dir_path"
-        exit 1
+        exit 0
     fi
 }
 
@@ -116,7 +116,7 @@ create_symlink() {
         fi
     else
         log_message "$target is unreachable. Symlink not created."
-        show_popup "$target is unreachable. If you're connected to this storage location and are still seeing this error, the project has not yet been created at this location. Otherwise, you can ignore this."
+        show_popup "$target is unreachable. Please either ensure your connection to this location, or reach out to a project manager for support."
     fi
 }
 
@@ -124,13 +124,13 @@ create_symlink() {
 sudo_password=$(prompt_for_sudo_password)
 if [ -z "$sudo_password" ]; then
     echo "Password entry cancelled by the user."
-    exit 1
+    exit 0
 fi
 
 # Validate the sudo password
-if ! validate_sudo_password "$sudo_password"; then
-    show_popup "Invalid sudo password. Exiting."
-    exit 1
+if ! validate_sudo_password("$sudo_password"); then
+    show_popup "Hmmm, it seems like this is the wrong password. Exiting."
+    exit 0
 fi
 
 # Check if /Volumes/BAKED exists and prompt to create if not
@@ -159,66 +159,82 @@ fi
 
 case "$action" in
     "Create Symlinks")
+        # No additional prompt needed for this action
         ;;
     "Transfer Shot")
+        # Prompt for project name
         project_name=$(prompt_for_input "Enter the project name:" "")
         if [ "$project_name" = "CANCELLED" ]; then
             echo "Operation cancelled by the user at project name prompt."
             exit 0
         fi
 
+        # Prompt for category
         category=$(prompt_for_category)
         if [ "$category" = "CANCELLED" ]; then
             echo "Operation cancelled by the user at category selection."
             exit 0
         fi
 
+        # Prompt for shot name
         shot_name=$(prompt_for_input "Enter the shot name:" "")
         if [ "$shot_name" = "CANCELLED" ]; then
             echo "Operation cancelled by the user at shot name prompt."
             exit 0
         fi
 
+        # Check if any input is empty
         if [ -z "$project_name" ] || [ -z "$category" ] || [ -z "$shot_name" ]; then
             echo "Project name, category, or shot name cannot be empty."
+            show_popup "Project name or category cannot be empty."
             exit 0
         fi
 
+        # Define source and destination paths for rsync
         source_path="/Volumes/BAKED/$category/$project_name/BASKET/2_WORK/1_SEQUENCES/VFX/$shot_name"
         destination_path="/Volumes/BAKED/$category/$project_name/SUITE/2_WORK/1_SEQUENCES/VFX"
 
+        # Execute rsync in a new terminal window
         execute_rsync "$source_path" "$destination_path"
         exit 0
         ;;
     "Archive Show")
+        # Prompt for project name
         project_name=$(prompt_for_input "Enter the project name:" "")
         if [ "$project_name" = "CANCELLED" ]; then
             echo "Operation cancelled by the user at project name prompt."
             exit 0
         fi
 
+        # Prompt for category
         category=$(prompt_for_category)
         if [ "$category" = "CANCELLED" ]; then
             echo "Operation cancelled by the user at category selection."
             exit 0
         fi
 
+        # Check if any input is empty
         if [ -z "$project_name" ] || [ -z "$category" ]; then
             echo "Project name or category cannot be empty."
+            show_popup "Project name or category cannot be empty."
             exit 0
         fi
 
+        # Define source and destination paths for rsync
         source_path="/Volumes/BAKED/$category/$project_name/SUITE/2_WORK/1_SEQUENCES/VFX"
         destination_path="/Volumes/BAKED/$category/$project_name/BASKET/2_WORK/1_SEQUENCES"
 
+        # Execute rsync in a new terminal window
         execute_rsync "$source_path" "$destination_path"
         exit 0
         ;;
     "Visit Documentation Site")
+        # Open the documentation site
         open_documentation_site
         exit 0
         ;;
     *)
+        # Handle unknown actions
         echo "Unknown action. Exiting."
         exit 0
         ;;
@@ -231,25 +247,32 @@ if [ "$project_name" = "CANCELLED" ]; then
     exit 0
 fi
 
+# Prompt for category
 category=$(prompt_for_category)
 if [ "$category" = "CANCELLED" ]; then
     echo "Operation cancelled by the user at category selection."
     exit 0
 fi
 
+# Check if any input is empty
 if [ -z "$project_name" ] || [ -z "$category" ]; then
     echo "Project name or category cannot be empty."
+    show_popup "Project name or category cannot be empty."
     exit 0
 fi
 
+# Define base path and project path
 base_path="/Volumes/BAKED"
 project_path="$base_path/$category/$project_name"
 
+# Create project directory
 create_directory "$project_path"
 
+# Create symbolic links for SUITE and BASKET
 create_symlink "/Volumes/Suite/$category/$project_name" "$project_path/SUITE"
 create_symlink "/Volumes/Basket/$category/$project_name" "$project_path/BASKET"
 
+# Notify user of successful creation
 echo "Project directory and symbolic links created successfully."
-show_popup "Symlinks created, nice one!"
+show_popup "🥳 Symlinks created, nice one! 🎉"
 exit 0
