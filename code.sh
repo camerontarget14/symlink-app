@@ -108,7 +108,7 @@ create_symlink() {
     if [ -L "$link" ]; then
         log_message "Symlink at $link already exists. Skipping creation."
     elif [[ -d "$target" ]]; then
-        if ln -s "$target" "$link"; then
+        if sudo ln -s "$target" "$link"; then
             log_message "Created symlink at $link pointing to $target"
         else
             log_message "Failed to create symlink at $link pointing to $target"
@@ -251,4 +251,5 @@ create_symlink "/Volumes/Suite/$category/$project_name" "$project_path/SUITE"
 create_symlink "/Volumes/Basket/$category/$project_name" "$project_path/BASKET"
 
 echo "Project directory and symbolic links created successfully."
+show_popup "Symlinks created, nice one!"
 exit 0
