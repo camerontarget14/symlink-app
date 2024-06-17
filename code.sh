@@ -2,7 +2,7 @@
 
 # Function to prompt for sudo password using AppleScript
 prompt_for_sudo_password() {
-    osascript -e 'Tell application "System Events" to display dialog "Please enter your system password:" default answer "" with hidden answer' -e 'text returned of result'
+    osascript -e 'Tell application "System Events" to display dialog "Please enter your system password: 🔐" default answer "" with hidden answer' -e 'text returned of result'
 }
 
 # Function to validate the entered password
@@ -13,7 +13,7 @@ validate_sudo_password() {
 # Function to prompt for action using AppleScript
 prompt_for_action() {
     osascript <<EOT
-        set action_list to {"Create Symlinks", "Transfer Shot", "Archive Show", "Visit Documentation Site"}
+        set action_list to {"Create Symlinks 🔗", "Transfer Shot 🚀", "Archive Show 🗂️", "Visit Documentation Site ⚙️"}
         try
             set chosen_action to choose from list action_list with prompt "What would you like to do?"
             if chosen_action is false then
@@ -78,7 +78,7 @@ execute_rsync() {
     osascript <<EOT
         tell application "Terminal"
             activate
-            do script "rsync -avh --ignore-existing '$source_path/' '$destination_path/'"
+            do script "rsync -avh --ignore-existing '$source_path' '$destination_path/'"
         end tell
 EOT
 }
@@ -116,7 +116,7 @@ create_symlink() {
         fi
     else
         log_message "$target is unreachable. Symlink not created."
-        show_popup "$target is unreachable. Please either ensure your connection to this location, or reach out to a project manager for support."
+        show_popup "$target is unreachable. Please either ensure your connection to this location 📍, or reach out to a project manager for support 🙋‍♂️."
     fi
 }
 
@@ -128,15 +128,15 @@ if [ -z "$sudo_password" ]; then
 fi
 
 # Validate the sudo password
-if ! validate_sudo_password("$sudo_password"); then
-    show_popup "Hmmm, it seems like this is the wrong password. Exiting."
+if ! validate_sudo_password "$sudo_password"; then
+    show_popup "⚠️ Hmmm, it seems like this is the wrong password. Exiting."
     exit 0
 fi
 
 # Check if /Volumes/BAKED exists and prompt to create if not
 if [ ! -d "/Volumes/BAKED" ]; then
     response=$(osascript <<EOT
-        display dialog "It looks like the BAKED folder does not exist at /Volumes/BAKED - would you like to create it?" buttons {"No", "Yes"} default button "Yes"
+        display dialog "It looks like the 🍪 BAKED folder does not exist at /Volumes/BAKED - would you like to create it?" buttons {"No", "Yes"} default button "Yes"
         return button returned of result
 EOT
     )
@@ -146,7 +146,7 @@ EOT
         exit 0
     else
         create_directory "/Volumes/BAKED"
-        show_popup "The BAKED folder has been created at /Volumes/BAKED."
+        show_popup "👏 The BAKED folder has been created at /Volumes/BAKED."
     fi
 fi
 
@@ -158,10 +158,10 @@ if [ "$action" = "CANCELLED" ]; then
 fi
 
 case "$action" in
-    "Create Symlinks")
+    "Create Symlinks 🔗")
         # No additional prompt needed for this action
         ;;
-    "Transfer Shot")
+    "Transfer Shot 🚀")
         # Prompt for project name
         project_name=$(prompt_for_input "Enter the project name:" "")
         if [ "$project_name" = "CANCELLED" ]; then
@@ -186,19 +186,19 @@ case "$action" in
         # Check if any input is empty
         if [ -z "$project_name" ] || [ -z "$category" ] || [ -z "$shot_name" ]; then
             echo "Project name, category, or shot name cannot be empty."
-            show_popup "Project name or category cannot be empty."
+            show_popup "⚠️ Project name or category cannot be empty."
             exit 0
         fi
 
         # Define source and destination paths for rsync
         source_path="/Volumes/BAKED/$category/$project_name/BASKET/2_WORK/1_SEQUENCES/VFX/$shot_name"
-        destination_path="/Volumes/BAKED/$category/$project_name/SUITE/2_WORK/1_SEQUENCES/VFX"
+        destination_path="/Volumes/BAKED/$category/$project_name/SUITE/2_WORK/1_SEQUENCES/VFX/"
 
         # Execute rsync in a new terminal window
         execute_rsync "$source_path" "$destination_path"
         exit 0
         ;;
-    "Archive Show")
+    "Archive Show 🗂️")
         # Prompt for project name
         project_name=$(prompt_for_input "Enter the project name:" "")
         if [ "$project_name" = "CANCELLED" ]; then
@@ -216,19 +216,19 @@ case "$action" in
         # Check if any input is empty
         if [ -z "$project_name" ] || [ -z "$category" ]; then
             echo "Project name or category cannot be empty."
-            show_popup "Project name or category cannot be empty."
+            show_popup "⚠️ Project name or category cannot be empty."
             exit 0
         fi
 
         # Define source and destination paths for rsync
-        source_path="/Volumes/BAKED/$category/$project_name/SUITE/2_WORK/1_SEQUENCES/VFX"
-        destination_path="/Volumes/BAKED/$category/$project_name/BASKET/2_WORK/1_SEQUENCES"
+        source_path="/Volumes/BAKED/$category/$project_name/SUITE/2_WORK/1_SEQUENCES/VFX/"
+        destination_path="/Volumes/BAKED/$category/$project_name/BASKET/2_WORK/1_SEQUENCES/"
 
         # Execute rsync in a new terminal window
         execute_rsync "$source_path" "$destination_path"
         exit 0
         ;;
-    "Visit Documentation Site")
+    "Visit Documentation Site ⚙️")
         # Open the documentation site
         open_documentation_site
         exit 0
@@ -257,7 +257,7 @@ fi
 # Check if any input is empty
 if [ -z "$project_name" ] || [ -z "$category" ]; then
     echo "Project name or category cannot be empty."
-    show_popup "Project name or category cannot be empty."
+    show_popup "⚠️ Project name or category cannot be empty."
     exit 0
 fi
 
