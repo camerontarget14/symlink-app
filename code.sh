@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# --- Safety/behavior flags ---
+# Safety/behavior flags
 set -o errexit
 set -o pipefail
 set -o nounset
