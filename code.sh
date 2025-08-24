@@ -13,7 +13,7 @@ validate_sudo_password() {
 # Function to prompt for action using AppleScript
 prompt_for_action() {
     osascript <<EOT
-        set action_list to {"Create Symlinks 🔗", "Transfer Shot 🚀", "Archive Show 🗂️", "Visit Documentation Site ⚙️"}
+        set action_list to {"Create Symlinks 🔗", "Visit Documentation Site ⚙️"}
         try
             set chosen_action to choose from list action_list with prompt "What would you like to do?"
             if chosen_action is false then
@@ -68,19 +68,7 @@ EOT
 
 # Function to open the documentation site
 open_documentation_site() {
-    open "https://bakedstudios.github.io/baked-docs/"
-}
-
-# Function to execute rsync command in a new terminal window
-execute_rsync() {
-    local source_path="$1"
-    local destination_path="$2"
-    osascript <<EOT
-        tell application "Terminal"
-            activate
-            do script "rsync -avh --ignore-existing '$source_path' '$destination_path/'"
-        end tell
-EOT
+    open "DOC SITE URL HERE"
 }
 
 # Function to create directory and handle errors
@@ -133,10 +121,10 @@ if ! validate_sudo_password "$sudo_password"; then
     exit 0
 fi
 
-# Check if /Volumes/BAKED exists and prompt to create if not
-if [ ! -d "/Volumes/BAKED" ]; then
+# Check if /Volumes/[COMPANY] exists and prompt to create if not
+if [ ! -d "/Volumes/[COMPANY]" ]; then
     response=$(osascript <<EOT
-        display dialog "It looks like the 🍪 BAKED folder does not exist at /Volumes/BAKED - would you like to create it?" buttons {"No", "Yes"} default button "Yes"
+        display dialog "It looks like the 💼 [COMPANY] folder does not exist at /Volumes/[COMPANY] - would you like to create it?" buttons {"No", "Yes"} default button "Yes"
         return button returned of result
 EOT
     )
@@ -145,8 +133,8 @@ EOT
         echo "Operation cancelled by the user."
         exit 0
     else
-        create_directory "/Volumes/BAKED"
-        show_popup "👏 The BAKED folder has been created at /Volumes/BAKED."
+        create_directory "/Volumes/[COMPANY]"
+        show_popup "👏 The [COMPANY] folder has been created at /Volumes/[COMPANY]."
     fi
 fi
 
@@ -159,9 +147,6 @@ fi
 
 case "$action" in
     "Create Symlinks 🔗")
-        # No additional prompt needed for this action
-        ;;
-    "Transfer Shot 🚀")
         # Prompt for project name
         project_name=$(prompt_for_input "Enter the project name:" "")
         if [ "$project_name" = "CANCELLED" ]; then
@@ -173,13 +158,6 @@ case "$action" in
         category=$(prompt_for_category)
         if [ "$category" = "CANCELLED" ]; then
             echo "Operation cancelled by the user at category selection."
-            exit 0
-        fi
-
-        # Prompt for shot name
-        shot_name=$(prompt_for_input "Enter the shot name:" "")
-        if [ "$shot_name" = "CANCELLED" ]; then
-            echo "Operation cancelled by the user at shot name prompt."
             exit 0
         fi
 
@@ -190,43 +168,6 @@ case "$action" in
             exit 0
         fi
 
-        # Define source and destination paths for rsync
-        source_path="/Volumes/BAKED/$category/$project_name/BASKET/2_WORK/1_SEQUENCES/VFX/$shot_name"
-        destination_path="/Volumes/BAKED/$category/$project_name/SUITE/2_WORK/1_SEQUENCES/VFX/"
-
-        # Execute rsync in a new terminal window
-        execute_rsync "$source_path" "$destination_path"
-        exit 0
-        ;;
-    "Archive Show 🗂️")
-        # Prompt for project name
-        project_name=$(prompt_for_input "Enter the project name:" "")
-        if [ "$project_name" = "CANCELLED" ]; then
-            echo "Operation cancelled by the user at project name prompt."
-            exit 0
-        fi
-
-        # Prompt for category
-        category=$(prompt_for_category)
-        if [ "$category" = "CANCELLED" ]; then
-            echo "Operation cancelled by the user at category selection."
-            exit 0
-        fi
-
-        # Check if any input is empty
-        if [ -z "$project_name" ] || [ -z "$category" ]; then
-            echo "Project name or category cannot be empty."
-            show_popup "⚠️ Project name or category cannot be empty."
-            exit 0
-        fi
-
-        # Define source and destination paths for rsync
-        source_path="/Volumes/BAKED/$category/$project_name/SUITE/2_WORK/1_SEQUENCES/VFX/"
-        destination_path="/Volumes/BAKED/$category/$project_name/BASKET/2_WORK/1_SEQUENCES/"
-
-        # Execute rsync in a new terminal window
-        execute_rsync "$source_path" "$destination_path"
-        exit 0
         ;;
     "Visit Documentation Site ⚙️")
         # Open the documentation site
@@ -262,7 +203,7 @@ if [ -z "$project_name" ] || [ -z "$category" ]; then
 fi
 
 # Define base path and project path
-base_path="/Volumes/BAKED"
+base_path="/Volumes/[COMPANY]"
 project_path="$base_path/$category/$project_name"
 
 # Create project directory
