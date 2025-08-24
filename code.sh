@@ -7,7 +7,10 @@ set -o nounset
 
 # ---- Helpers ----
 log_path="/tmp/symlink_logs.log"
-base_path="/Volumes/[COMPANY]"
+company_name_placeholder="CAMERON"
+storage_one_placeholder="CLOUD"
+storage_two_placeholder="PREM"
+base_path="/Volumes/$company_name_placeholder"
 
 log_message() {
   echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$log_path"
@@ -139,13 +142,13 @@ unset sudo_password
 
 # Ensure base company folder
 if [ ! -d "$base_path" ]; then
-  response="$(/usr/bin/osascript -e 'display dialog "The 💼 [COMPANY] folder does not exist at '"$base_path"'. Create it?" buttons {"No","Yes"} default button "Yes"' -e 'button returned of result' || true)"
+  response="$(/usr/bin/osascript -e 'display dialog "The folder does not exist at '"$base_path"'. Create it?" buttons {"No","Yes"} default button "Yes"' -e 'button returned of result' || true)"
   if [ "$response" != "Yes" ]; then
     echo "Operation cancelled by the user."
     exit 0
   fi
   create_directory "$base_path"
-  show_popup "👏 The [COMPANY] folder has been created at $base_path."
+  show_popup "👏 The folder has been created at $base_path."
 fi
 
 # Main action
@@ -191,8 +194,8 @@ project_path="$base_path/$category/$project_name"
 create_directory "$project_path"
 
 # Create symbolic links
-create_symlink "/Volumes/Suite/$category/$project_name"   "$project_path/SUITE"
-create_symlink "/Volumes/Basket/$category/$project_name"  "$project_path/BASKET"
+create_symlink "/Volumes/$storage_one_placeholder/$category/$project_name"   "$project_path/$storage_one_placeholder"
+create_symlink "/Volumes/$storage_two_placeholder/$category/$project_name"  "$project_path/$storage_two_placeholder"
 
 echo "Project directory and symbolic links created successfully."
 show_popup "🥳 Symlinks created. Nice one! 🎉"
