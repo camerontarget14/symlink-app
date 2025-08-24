@@ -10,6 +10,7 @@ log_path="/tmp/symlink_logs.log"
 company_name_placeholder="CAMERON"
 storage_one_placeholder="CLOUD"
 storage_two_placeholder="PREM"
+doc_site_placeholder="https://camerontarget.com"
 base_path="/Volumes/$company_name_placeholder"
 
 log_message() {
@@ -29,7 +30,6 @@ prompt_for_sudo_password() {
 }
 
 validate_sudo_password() {
-  # Validate once; rely on sudo timestamp for subsequent commands
   echo "$1" | /usr/bin/sudo -S -v >/dev/null 2>&1
 }
 
@@ -79,8 +79,7 @@ EOT
 }
 
 open_documentation_site() {
-  # TODO: replace with your real URL
-  /usr/bin/open "DOC SITE URL HERE"
+  /usr/bin/open "$doc_site_placeholder"
 }
 
 create_directory() {
@@ -124,9 +123,6 @@ create_symlink() {
   fi
 }
 
-# ---- Begin script flow ----
-
-# Prompt & validate sudo (do NOT keep pw longer than needed)
 sudo_password="$(prompt_for_sudo_password || true)"
 if [ -z "${sudo_password:-}" ]; then
   echo "Password entry cancelled by the user."
@@ -137,10 +133,8 @@ if ! validate_sudo_password "$sudo_password"; then
   show_popup "⚠️ That password didn't work. Exiting."
   exit 0
 fi
-# Clear the variable ASAP
 unset sudo_password
 
-# Ensure base company folder
 if [ ! -d "$base_path" ]; then
   response="$(/usr/bin/osascript -e 'display dialog "The folder does not exist at '"$base_path"'. Create it?" buttons {"No","Yes"} default button "Yes"' -e 'button returned of result' || true)"
   if [ "$response" != "Yes" ]; then
@@ -164,7 +158,6 @@ case "$action" in
     exit 0
     ;;
   "Create Symlinks 🔗")
-    # continue
     ;;
   *)
     echo "Unknown action. Exiting."
@@ -172,7 +165,6 @@ case "$action" in
     ;;
 esac
 
-# Single set of prompts (no duplicates)
 project_name="$(prompt_for_input "Enter the project name:" "")"
 if [ "$project_name" = "CANCELLED" ]; then
   echo "Operation cancelled by the user at project name prompt."
