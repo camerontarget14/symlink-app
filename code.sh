@@ -5,7 +5,6 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-# ---- Helpers ----
 log_path="/tmp/symlink_logs.log"
 company_name_placeholder="CAMERON"
 storage_one_placeholder="CLOUD"
